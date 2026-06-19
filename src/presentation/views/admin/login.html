@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — Daily Taaza</title>
+  <link rel="stylesheet" href="/styles/admin.css">
+</head>
+<body class="admin-login-page" data-admin-page="login">
+  <div class="admin-login-card">
+    <h1>Daily Taaza</h1>
+    <p>Admin sign in</p>
+    <form id="admin-login-form" class="admin-form">
+      <label>Email<input type="email" name="email" required value="admin@dailytaaza.com"></label>
+      <label>Password<input type="password" name="password" required></label>
+      <button type="submit" class="admin-btn">Sign in</button>
+      <p class="admin-error" id="admin-login-error"></p>
+    </form>
+    <p style="margin-top:1rem;font-size:0.85rem"><a href="/">← Back to store</a></p>
+  </div>
+  <script src="/scripts/admin/init.js"></script>
+</body>
+</html>

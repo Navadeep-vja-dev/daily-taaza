@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="../scripts/core/theme-init.js"></script>
+  <meta name="robots" content="noindex, follow">
+  <title>Checkout — Daily Taaza</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body data-page="checkout" data-header-scrolled="true" data-footer="minimal">
+
+  <main id="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <div class="container"><ol><li><a href="../index.html">Home</a></li><li><a href="cart.html">Cart</a></li><li><span aria-current="page">Checkout</span></li></ol></div>
+    </nav>
+    <section class="section">
+      <div class="container" style="max-width:720px">
+        <h1 class="headline-lg">Checkout</h1>
+        <div id="checkout-summary" class="cart-summary" style="margin:24px 0"></div>
+        <form id="checkout-form" class="contact-form-card">
+          <div class="form-group"><label for="fullName">Full Name</label><input type="text" id="fullName" name="fullName" class="input" required></div>
+          <div class="form-group"><label for="phone">Phone</label><input type="tel" id="phone" name="phone" class="input" required></div>
+          <div class="form-group"><label for="email">Email (optional)</label><input type="email" id="email" name="email" class="input"></div>
+          <div class="form-group"><label for="addressLine1">Address</label><input type="text" id="addressLine1" name="addressLine1" class="input" required></div>
+          <div class="form-group"><label for="addressLine2">Address line 2</label><input type="text" id="addressLine2" name="addressLine2" class="input"></div>
+          <div class="form-group"><label for="city">City</label><input type="text" id="city" name="city" class="input" value="Hyderabad" required></div>
+          <div class="form-group"><label for="pincode">Pincode</label><input type="text" id="pincode" name="pincode" class="input" pattern="[0-9]{6}" required></div>
+          <div class="form-group"><label for="notes">Order notes</label><textarea id="notes" name="notes" class="textarea" rows="2"></textarea></div>
+          <fieldset class="form-group">
+            <legend>Payment method</legend>
+            <label><input type="radio" name="paymentMethod" value="cod" checked> Cash on Delivery</label>
+            <label style="margin-left:16px"><input type="radio" name="paymentMethod" value="online"> Online Payment</label>
+          </fieldset>
+          <button type="submit" class="btn btn-commerce btn-block">Place Order</button>
+        </form>
+        <div id="checkout-success" hidden class="newsletter-success" style="margin-top:24px"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="../scripts/core/init.js"></script>
+</body>
+</html>

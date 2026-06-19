@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="../scripts/core/theme-init.js"></script>
+  <title>Login — Daily Taaza</title>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body data-page="login" data-header-scrolled="true" data-footer="minimal">
+  <main id="main-content" class="section">
+    <div class="container" style="max-width:420px">
+      <h1 class="headline-lg">Login</h1>
+      <p class="body-md">Sign in with your phone number to view orders.</p>
+      <form id="login-form" class="contact-form-card" style="margin-top:24px">
+        <div class="form-group"><label for="phone">Phone</label><input type="tel" id="phone" name="phone" class="input" required></div>
+        <div class="form-group"><label for="password">Password</label><input type="password" id="password" name="password" class="input" required minlength="6"></div>
+        <button type="submit" class="btn btn-commerce btn-block">Sign in</button>
+        <p class="body-sm" style="margin-top:16px">No account? <a href="register.html">Register</a></p>
+        <p class="admin-error" id="login-error"></p>
+      </form>
+    </div>
+  </main>
+  <script src="../scripts/core/init.js"></script>
+</body>
+</html>

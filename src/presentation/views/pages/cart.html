@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="../scripts/core/theme-init.js"></script>
+  <meta name="description" content="Review your Daily Taaza cart — organic South Indian food. Update quantities, remove items and checkout securely.">
+  <meta name="robots" content="noindex, follow">
+  <title>Shopping Cart — Daily Taaza</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body data-page="cart" data-header-scrolled="true" data-footer="minimal">
+
+  <main id="main-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <div class="container"><ol><li><a href="../index.html">Home</a></li><li><span aria-current="page">Cart</span></li></ol></div>
+    </nav>
+    <section class="page-hero">
+      <div class="container reveal reveal--up">
+        <p class="section-label">Your Cart</p>
+        <h1 class="headline-lg">Shopping cart</h1>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:0">
+      <div class="container">
+        <div id="cart-empty" class="cart-empty fade-in" hidden>
+          <h2 class="headline-md">Your cart is empty</h2>
+          <p>Looks like you haven't added anything yet. Explore our homemade collection!</p>
+          <a href="products.html" class="btn btn-primary">Browse Products</a>
+        </div>
+
+        <div class="cart-layout">
+          <div id="cart-items"></div>
+
+          <aside id="cart-summary" class="cart-summary fade-in" hidden>
+            <h2>Order Summary</h2>
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <span id="cart-subtotal">₹0</span>
+            </div>
+            <div class="summary-row">
+              <span>Delivery</span>
+              <span>Calculated at checkout</span>
+            </div>
+            <div class="summary-row summary-row--total">
+              <span>Total</span>
+              <span id="cart-total">₹0</span>
+            </div>
+            <button type="button" id="checkout-btn" class="btn btn-commerce btn-block" style="margin-top:24px">Proceed to Checkout</button>
+            <a href="products.html" class="btn btn-outline btn-block" style="margin-top:12px">Continue Shopping</a>
+            <button type="button" id="clear-cart-btn" class="btn btn-sm" style="margin-top:16px;width:100%;color:var(--color-text-muted)">Clear Cart</button>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="../scripts/core/init.js"></script>
+</body>
+</html>

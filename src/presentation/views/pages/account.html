@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="../scripts/core/theme-init.js"></script>
+  <title>My Account — Daily Taaza</title>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body data-page="account" data-header-scrolled="true" data-footer="minimal">
+  <main id="main-content" class="section">
+    <div class="container" style="max-width:720px">
+      <h1 class="headline-lg">My Account</h1>
+      <div id="account-profile" class="contact-form-card" style="margin:24px 0"></div>
+      <div class="account-actions" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">
+        <a href="orders.html" class="btn btn-primary">My Orders</a>
+        <button type="button" class="btn btn-secondary" id="logout-btn">Logout</button>
+      </div>
+      <h2 class="headline-md">Saved addresses</h2>
+      <div id="account-addresses"></div>
+    </div>
+  </main>
+  <script src="../scripts/core/init.js"></script>
+</body>
+</html>

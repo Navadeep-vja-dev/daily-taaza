@@ -1,0 +1,85 @@
+:root {
+  color-scheme: light;
+  --color-forest: #2d5a27;
+  --color-forest-dark: #154212;
+  --color-primary-hover: #154212;
+  --color-sage: #8daa91;
+  --color-sage-light: rgba(141, 170, 145, 0.1);
+  --color-sage-divider: rgba(141, 170, 145, 0.3);
+  --color-terracotta: #d47651;
+  --color-terracotta-dark: #b85f3d;
+  --color-cream: #faf9f6;
+  --color-white: #ffffff;
+  --color-surface-alt: #ffffff;
+  --color-text: #1a1c1a;
+  --color-text-muted: #42493e;
+  --color-border: #c2c9bb;
+  --color-error: #ba1a1a;
+  --color-heading: #154212;
+  --color-logo: #2d5a27;
+  --color-header-bg: rgba(250, 249, 246, 0.8);
+  --color-header-bg-solid: rgba(250, 249, 246, 0.95);
+  --color-footer-bg: #154212;
+  --color-newsletter-bg: #154212;
+  --color-input-bg: #ffffff;
+  --color-grain-opacity: 0.025;
+  --color-on-dark: #ffffff;
+
+  --font-serif: 'Source Serif 4', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --shadow-card: 0 4px 20px rgba(45, 90, 39, 0.05);
+  --shadow-card-hover: 0 8px 32px rgba(45, 90, 39, 0.1);
+  --shadow-btn: 0 2px 8px rgba(45, 90, 39, 0.15);
+
+  --radius-sm: 0.25rem;
+  --radius-btn: 0.5rem;
+  --radius-img: 0.75rem;
+  --radius-card: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+
+  --space-unit: 8px;
+  --container-max: 1280px;
+  --gutter: 24px;
+  --margin-desktop: 64px;
+  --margin-tablet: 32px;
+  --margin-mobile: 20px;
+  --section-padding: clamp(48px, 8vw, 120px);
+  --header-height: 72px;
+
+  --transition: 0.25s ease;
+  --transition-slow: 0.4s ease;
+  --theme-transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-forest: #3b6934;
+  --color-forest-dark: #2d5a27;
+  --color-primary-hover: #4a7a42;
+  --color-sage: #8daa91;
+  --color-sage-light: rgba(141, 170, 145, 0.15);
+  --color-sage-divider: rgba(141, 170, 145, 0.22);
+  --color-terracotta: #e8936f;
+  --color-terracotta-dark: #d47651;
+  --color-cream: #121812;
+  --color-white: #1e261c;
+  --color-surface-alt: #171d15;
+  --color-text: #f2f1ee;
+  --color-text-muted: #b0bdb2;
+  --color-border: #3d4a3a;
+  --color-heading: #bcf0ae;
+  --color-logo: #9dd090;
+  --color-header-bg: rgba(18, 24, 18, 0.88);
+  --color-header-bg-solid: rgba(18, 24, 18, 0.96);
+  --color-footer-bg: #0a1009;
+  --color-newsletter-bg: #0f1a0e;
+  --color-input-bg: #252d23;
+  --color-grain-opacity: 0.04;
+  --color-on-dark: #f2f1ee;
+
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 8px 36px rgba(0, 0, 0, 0.45);
+  --shadow-btn: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
