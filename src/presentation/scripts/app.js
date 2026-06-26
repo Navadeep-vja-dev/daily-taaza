@@ -25,7 +25,12 @@ const App = {
     CartUI.init();
 
     try {
-      await ProductRepository.loadAll();
+      await Promise.all([
+        ProductRepository.loadAll(),
+        typeof CategoryRepository !== 'undefined' && CategoryRepository.loadFromApi
+          ? CategoryRepository.loadFromApi()
+          : Promise.resolve(),
+      ]);
     } catch (err) {
       console.error('Failed to load catalog:', err);
     }

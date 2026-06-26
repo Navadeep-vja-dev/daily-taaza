@@ -9,11 +9,6 @@ const Layout = {
     return Paths.isSubPage() ? filename : 'pages/' + filename;
   },
 
-  categoryHref(category) {
-    const base = Paths.isSubPage() ? '' : 'pages/';
-    return base + 'products.html?category=' + category;
-  },
-
   renderChrome() {
     return (
       '<a href="#main-content" class="skip-link">Skip to main content</a>' +
@@ -50,11 +45,8 @@ const Layout = {
       '<header class="site-header' + scrolled + '">' +
       '<div class="container header-inner">' +
       '<a href="' + home + '" class="logo" aria-label="' + SiteConfig.name + ' Home">' +
-      '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">' +
-      '<path d="M16 4C12 4 8 8 8 14c0 6 4 14 8 14s8-8 8-14c0-6-4-10-8-10z" fill="currentColor" opacity="0.2"/>' +
-      '<path d="M16 6c-3 0-6 3-6 8 0 4 2 10 6 10s6-6 6-10c0-5-3-8-6-8z" fill="currentColor"/>' +
-      '<path d="M16 22v6M13 25h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' +
-      '</svg><span>' + SiteConfig.name + '</span></a>' +
+      '<img src="' + Paths.asset('assets/images/dailytaaza-logo.png') + '" alt="' + SiteConfig.name + '" class="logo-img" width="44" height="44">' +
+      '<span>' + SiteConfig.name + '</span></a>' +
       '<nav class="nav-desktop" aria-label="Main navigation">' +
       navLinks +
       '<a href="' + this.pageHref('login.html') + '" class="nav-link" id="account-nav-link" data-nav="account">Login</a>' +
@@ -107,17 +99,13 @@ const Layout = {
       '<div class="container">' +
       '<div class="footer-grid">' +
       '<div class="footer-brand">' +
-      '<a href="' + home + '" class="logo">' +
-      '<svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true">' +
-      '<path d="M16 6c-3 0-6 3-6 8 0 4 2 10 6 10s6-6 6-10c0-5-3-8-6-8z" fill="#ffffff"/>' +
-      '</svg><span>' + SiteConfig.name + '</span></a>' +
+      '<a href="' + home + '" class="logo footer-logo">' +
+      '<img src="' + Paths.asset('assets/images/dailytaaza-logo.png') + '" alt="' + SiteConfig.name + '" class="logo-img" width="40" height="40">' +
+      '<span>' + SiteConfig.name + '</span></a>' +
       '<p>' + SiteConfig.tagline + '. Organic homemade South Indian foods, crafted with love and delivered fresh.</p>' +
       '</div>' +
       '<div class="footer-col"><h4>Shop</h4>' +
       '<a href="' + this.pageHref('products.html') + '">All Products</a>' +
-      '<a href="' + this.categoryHref('batters') + '">Batters</a>' +
-      '<a href="' + this.categoryHref('karapodulu') + '">Karapodulu</a>' +
-      '<a href="' + this.categoryHref('healthy-ladoos') + '">Healthy Ladoos</a>' +
       '</div>' +
       '<div class="footer-col"><h4>Company</h4>' +
       '<a href="' + this.pageHref('about.html') + '">About Us</a>' +

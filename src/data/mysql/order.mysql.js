@@ -4,11 +4,43 @@ const CartMysql = require('./cart.mysql');
 const CustomerMysql = require('./customer.mysql');
 const SettingsMysql = require('./settings.mysql');
 
-function generateOrderNumber() {
-  const d = new Date();
-  const date = d.toISOString().slice(0, 10).replace(/-/g, '');
-  const seq = String(Math.floor(Math.random() * 9999)).padStart(4, '0');
-  return `DT-${date}-${seq}`;
+const ORDER_SEQUENCE_NAME = 'order';
+
+function formatOrderNumber(sequenceNumber) {
+  return `O-${String(sequenceNumber).padStart(6, '0')}`;
+}
+
+async function nextOrderNumber() {
+  if (db.isMemoryMode()) {
+    const mem = db.getMemory();
+    if (!mem.sequences) mem.sequences = {};
+    mem.sequences.order = (mem.sequences.order || 0) + 1;
+    return formatOrderNumber(mem.sequences.order);
+  }
+
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query(
+      'INSERT INTO id_sequences (name, next_val) VALUES (?, 1) ON DUPLICATE KEY UPDATE next_val = next_val',
+      [ORDER_SEQUENCE_NAME]
+    );
+    const [rows] = await conn.query('SELECT next_val FROM id_sequences WHERE name = ? FOR UPDATE', [
+      ORDER_SEQUENCE_NAME,
+    ]);
+    const nextVal = Number(rows[0].next_val);
+    await conn.query('UPDATE id_sequences SET next_val = ? WHERE name = ?', [
+      nextVal + 1,
+      ORDER_SEQUENCE_NAME,
+    ]);
+    await conn.commit();
+    return formatOrderNumber(nextVal);
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 }
 
 function mapOrderItem(i) {
@@ -70,7 +102,7 @@ const OrderMysql = {
     const deliveryFee = Number(await SettingsMysql.get('delivery_fee', 49));
     const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
     const total = subtotal + deliveryFee;
-    const orderNumber = generateOrderNumber();
+    const orderNumber = await nextOrderNumber();
     const address = [checkoutData.addressLine1, checkoutData.addressLine2, checkoutData.city, checkoutData.pincode]
       .filter(Boolean)
       .join(', ');

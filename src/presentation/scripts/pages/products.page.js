@@ -13,7 +13,24 @@ const ProductsPage = {
 
     const searchInput = document.getElementById('products-search');
     const sortSelect = document.getElementById('sort-select');
-    const chips = document.querySelectorAll('.filter-chip');
+    const chipsContainer = document.querySelector('.filter-chips');
+
+    await CategoryRepository.loadFromApi();
+    let chips = document.querySelectorAll('.filter-chip');
+    if (chipsContainer) {
+      chipsContainer.innerHTML = '';
+      const buildChip = (categoryId, label) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'filter-chip';
+        btn.dataset.category = categoryId;
+        btn.textContent = label;
+        chipsContainer.appendChild(btn);
+      };
+      buildChip('all', 'All');
+      CategoryRepository.getAll().forEach((c) => buildChip(c.id, c.label));
+      chips = chipsContainer.querySelectorAll('.filter-chip');
+    }
 
     if (searchInput && currentQuery) {
       searchInput.value = currentQuery;

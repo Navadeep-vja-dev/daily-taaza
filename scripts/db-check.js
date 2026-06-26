@@ -101,6 +101,10 @@ async function main() {
   if (!diagnosis.ok) {
     fail('Application cannot authenticate to MySQL');
     info(diagnosis.cause);
+    if (diagnosis.dockerHint?.worksOnDockerPort) {
+      console.log('');
+      fail(`Credentials work on Docker MySQL port ${diagnosis.dockerHint.dockerPort} but .env uses port ${config.port}`);
+    }
     console.log('');
     console.log('Suggested fixes:');
     diagnosis.fixes.forEach((fix, i) => console.log(`  ${i + 1}. ${fix}`));

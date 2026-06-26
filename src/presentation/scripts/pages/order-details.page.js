@@ -61,7 +61,15 @@ const OrderDetailsPage = {
         });
       }
       document.getElementById('reorder-btn').addEventListener('click', async () => {
-        await CustomerApi.reorder(orderNumber);
+        const result = await CustomerApi.reorder(orderNumber);
+        if (result.skipped && result.skipped.length) {
+          const names = result.skipped.map((s) => s.name).join(', ');
+          alert(
+            'Some items are no longer available and were skipped: ' +
+              names +
+              '. Available items were added to your cart.'
+          );
+        }
         window.location.href = Paths.pageHref('cart.html');
       });
     } catch (err) {

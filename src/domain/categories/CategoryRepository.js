@@ -2,16 +2,39 @@
  * Domain layer — Category repository
  */
 const CategoryRepository = {
+  _labels: { ...CATEGORY_LABELS_MOCK },
+
   getLabels() {
-    return { ...CATEGORY_LABELS_MOCK };
+    return { ...this._labels };
   },
 
   getLabel(categoryId) {
-    return CATEGORY_LABELS_MOCK[categoryId] || categoryId;
+    return this._labels[categoryId] || categoryId;
   },
 
   getAll() {
-    return Object.entries(CATEGORY_LABELS_MOCK).map(([id, label]) => Category.fromRaw(id, label));
+    return Object.entries(this._labels).map(([id, label]) => Category.fromRaw(id, label));
+  },
+
+  /**
+   * Fetch categories from the backend and cache their labels.
+   * Falls back to the bundled mock labels if the request fails.
+   */
+  async loadFromApi() {
+    if (typeof ApiCategoryProvider === 'undefined') return this.getAll();
+    try {
+      const categories = await ApiCategoryProvider.getAll();
+      if (Array.isArray(categories) && categories.length) {
+        const labels = {};
+        categories.forEach((c) => {
+          if (c && c.id) labels[c.id] = c.label || c.id;
+        });
+        this._labels = labels;
+      }
+    } catch (err) {
+      console.error('Daily Taaza: failed to load categories from API', err);
+    }
+    return this.getAll();
   },
 };
 

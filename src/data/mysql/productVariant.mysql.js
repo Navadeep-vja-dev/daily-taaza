@@ -15,6 +15,32 @@ function mapVariantRow(row) {
   };
 }
 
+function toVariantRow(productId, v) {
+  return {
+    id: v.id,
+    product_id: productId,
+    label: v.label,
+    weight_grams: v.weight_grams ?? v.weightGrams ?? null,
+    price: v.price,
+    compare_price: v.compare_price ?? v.comparePrice ?? null,
+    stock_qty: v.stock_qty ?? v.stockQty ?? 100,
+    is_default: 0,
+    sort_order: v.sort_order ?? v.sortOrder ?? 0,
+  };
+}
+
+async function isVariantInCart(variantId) {
+  if (db.isMemoryMode()) {
+    const mem = db.getMemory();
+    for (const items of mem.cartItems.values()) {
+      if (items.some((i) => i.variant_id === variantId)) return true;
+    }
+    return false;
+  }
+  const [rows] = await db.query('SELECT COUNT(*) AS c FROM cart_items WHERE variant_id = ?', [variantId]);
+  return Number(rows[0].c) > 0;
+}
+
 const ProductVariantMysql = {
   mapVariantRow,
 
@@ -47,43 +73,83 @@ const ProductVariantMysql = {
   },
 
   async replaceForProduct(productId, variants) {
+    const existing = await this.getByProductId(productId);
+    const newIds = new Set(variants.map((v) => v.id));
+    const defaultVariant = variants.find((v) => v.is_default || v.isDefault) || variants[0];
+
     if (db.isMemoryMode()) {
       const mem = db.getMemory();
-      mem.productVariants = (mem.productVariants || []).filter((v) => v.product_id !== productId);
+      if (!mem.productVariants) mem.productVariants = [];
+
       for (const v of variants) {
-        mem.productVariants.push({
-          id: v.id,
-          product_id: productId,
-          label: v.label,
-          weight_grams: v.weight_grams ?? v.weightGrams ?? null,
-          price: v.price,
-          compare_price: v.compare_price ?? v.comparePrice ?? null,
-          stock_qty: v.stock_qty ?? v.stockQty ?? 100,
-          is_default: v.is_default ?? v.isDefault ? 1 : 0,
-          sort_order: v.sort_order ?? v.sortOrder ?? 0,
-        });
+        const row = toVariantRow(productId, v);
+        const idx = mem.productVariants.findIndex((x) => x.id === row.id);
+        if (idx >= 0) mem.productVariants[idx] = row;
+        else mem.productVariants.push(row);
       }
+
+      for (const old of existing) {
+        if (newIds.has(old.id)) continue;
+        if (await isVariantInCart(old.id)) {
+          throw new Error(`Cannot remove variant "${old.label}" because it is in a customer cart`);
+        }
+        mem.productVariants = mem.productVariants.filter((x) => x.id !== old.id);
+      }
+
+      mem.productVariants.forEach((v) => {
+        if (v.product_id === productId) {
+          v.is_default = defaultVariant && v.id === defaultVariant.id ? 1 : 0;
+        }
+      });
+
       return this.getByProductId(productId);
     }
 
-    await db.query('DELETE FROM product_variants WHERE product_id = ?', [productId]);
+    await db.query('UPDATE product_variants SET is_default = 0 WHERE product_id = ?', [productId]);
+
     for (const v of variants) {
+      const row = toVariantRow(productId, v);
       await db.query(
         `INSERT INTO product_variants (id, product_id, label, weight_grams, price, compare_price, stock_qty, is_default, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           product_id = VALUES(product_id),
+           label = VALUES(label),
+           weight_grams = VALUES(weight_grams),
+           price = VALUES(price),
+           compare_price = VALUES(compare_price),
+           stock_qty = VALUES(stock_qty),
+           is_default = VALUES(is_default),
+           sort_order = VALUES(sort_order)`,
         [
-          v.id,
-          productId,
-          v.label,
-          v.weight_grams ?? v.weightGrams ?? null,
-          v.price,
-          v.compare_price ?? v.comparePrice ?? null,
-          v.stock_qty ?? v.stockQty ?? 100,
-          v.is_default ?? v.isDefault ? 1 : 0,
-          v.sort_order ?? v.sortOrder ?? 0,
+          row.id,
+          row.product_id,
+          row.label,
+          row.weight_grams,
+          row.price,
+          row.compare_price,
+          row.stock_qty,
+          row.is_default,
+          row.sort_order,
         ]
       );
     }
+
+    if (defaultVariant) {
+      await db.query('UPDATE product_variants SET is_default = 1 WHERE id = ? AND product_id = ?', [
+        defaultVariant.id,
+        productId,
+      ]);
+    }
+
+    for (const old of existing) {
+      if (newIds.has(old.id)) continue;
+      if (await isVariantInCart(old.id)) {
+        throw new Error(`Cannot remove variant "${old.label}" because it is in a customer cart`);
+      }
+      await db.query('DELETE FROM product_variants WHERE id = ? AND product_id = ?', [old.id, productId]);
+    }
+
     return this.getByProductId(productId);
   },
 

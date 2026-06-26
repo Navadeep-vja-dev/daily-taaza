@@ -4,7 +4,7 @@ const validate = require('../middleware/validate.middleware');
 const cartSession = require('../middleware/cartSession.middleware');
 const { requireAdminAuth, requirePermission } = require('../middleware/auth.middleware');
 const { requireCustomerAuth, optionalCustomerAuth } = require('../middleware/customerAuth.middleware');
-const { upload } = require('../middleware/upload.middleware');
+const { handleProductImagesUpload, handleSingleImageUpload } = require('../middleware/upload.middleware');
 const schemas = require('../validators/schemas');
 
 const productCtrl = require('../controllers/product.controller');
@@ -68,16 +68,23 @@ router.post('/payments/webhook', asyncHandler(paymentCtrl.webhook));
 router.post('/admin/auth/login', validate(schemas.adminLoginSchema), asyncHandler(authCtrl.login));
 router.get('/admin/auth/me', requireAdminAuth, asyncHandler(authCtrl.me));
 
+router.get('/admin/products/next-id', requireAdminAuth, requirePermission('products:read'), asyncHandler(productCtrl.getNextId));
 router.get('/admin/products', requireAdminAuth, requirePermission('products:read'), asyncHandler(productCtrl.list));
 router.post('/admin/products', requireAdminAuth, requirePermission('products:write'), validate(schemas.productSchema), asyncHandler(productCtrl.create));
 router.put('/admin/products/:id', requireAdminAuth, requirePermission('products:write'), validate(schemas.productUpdateSchema), asyncHandler(productCtrl.update));
 router.delete('/admin/products/:id', requireAdminAuth, requirePermission('products:write'), asyncHandler(productCtrl.remove));
 
-router.post('/admin/products/:id/images', requireAdminAuth, requirePermission('products:write'), upload.single('image'), asyncHandler(productCtrl.uploadImage));
+router.post(
+  '/admin/products/:id/images',
+  requireAdminAuth,
+  requirePermission('products:write'),
+  handleProductImagesUpload,
+  asyncHandler(productCtrl.uploadImages)
+);
 router.delete('/admin/products/:id/images/:imageId', requireAdminAuth, requirePermission('products:write'), asyncHandler(productCtrl.deleteImage));
 router.put('/admin/products/:id/images/:imageId/primary', requireAdminAuth, requirePermission('products:write'), asyncHandler(productCtrl.setPrimaryImage));
 
-router.get('/admin/categories', requireAdminAuth, requirePermission('products:read'), asyncHandler(categoryCtrl.list));
+router.get('/admin/categories', requireAdminAuth, requirePermission('products:read'), asyncHandler(categoryCtrl.adminList));
 router.post('/admin/categories', requireAdminAuth, requirePermission('products:write'), validate(schemas.categorySchema), asyncHandler(categoryCtrl.create));
 router.put('/admin/categories/:id', requireAdminAuth, requirePermission('products:write'), validate(schemas.categoryUpdateSchema), asyncHandler(categoryCtrl.update));
 router.delete('/admin/categories/:id', requireAdminAuth, requirePermission('products:write'), asyncHandler(categoryCtrl.remove));
@@ -92,7 +99,7 @@ router.post(
   '/admin/uploads/products',
   requireAdminAuth,
   requirePermission('products:write'),
-  upload.single('image'),
+  handleSingleImageUpload,
   asyncHandler(settingsCtrl.uploadProductImage)
 );
 

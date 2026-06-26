@@ -88,8 +88,8 @@ const addressSchema = Joi.object({
 });
 
 const productSchema = Joi.object({
-  id: Joi.string().required(),
-  category_id: Joi.string().required(),
+  id: Joi.string(),
+  category_id: Joi.number().integer().required(),
   name: Joi.string().required(),
   slug: Joi.string().required(),
   price: Joi.number().positive().required(),
@@ -98,7 +98,7 @@ const productSchema = Joi.object({
   description: Joi.string().required(),
   ingredients: Joi.array().items(Joi.string()),
   benefits: Joi.array().items(Joi.string()),
-  image: Joi.string().required(),
+  image: Joi.string(),
   placeholder_color: Joi.string().required(),
   placeholder_text: Joi.string().allow(null),
   stock_qty: Joi.number().integer().min(0),
@@ -106,7 +106,7 @@ const productSchema = Joi.object({
 });
 
 const productUpdateSchema = Joi.object({
-  category_id: Joi.string(),
+  category_id: Joi.number().integer(),
   name: Joi.string(),
   slug: Joi.string(),
   price: Joi.number().positive(),
@@ -124,15 +124,12 @@ const productUpdateSchema = Joi.object({
 }).min(1);
 
 const categorySchema = Joi.object({
-  id: Joi.string().required(),
   label: Joi.string().required(),
-  sort_order: Joi.number().integer().min(0).default(0),
   is_active: Joi.boolean().default(true),
 });
 
 const categoryUpdateSchema = Joi.object({
   label: Joi.string(),
-  sort_order: Joi.number().integer().min(0),
   is_active: Joi.boolean(),
 }).min(1);
 

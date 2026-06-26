@@ -4,7 +4,7 @@
 
 function renderPlaceholder(product, className = 'placeholder-image', hidden = false) {
   const letter = product.name.charAt(0).toUpperCase();
-  const textColor = product.placeholderText || '#2D5A27';
+  const textColor = product.placeholderText || '#036B61';
   const display = hidden ? 'display:none;' : '';
   return (
     '<div class="' + className + '" style="' + display + 'background-color:' + product.placeholderColor + ';color:' + textColor + '">' +

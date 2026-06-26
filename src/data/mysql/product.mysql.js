@@ -1,7 +1,11 @@
 const db = require('./db');
 const ProductVariantMysql = require('./productVariant.mysql');
 const ProductImageMysql = require('./productImage.mysql');
+const ProductSequenceMysql = require('./productSequence.mysql');
 const { mapProductRow } = require('../../shared/utils/mappers');
+const { deleteUploadedImageFiles } = require('../../shared/utils/productImageFiles');
+
+const PLACEHOLDER_IMAGE = 'assets/images/idli-dosa-batter.jpg';
 
 async function enrichProduct(row, options = {}) {
   const product = mapProductRow(row);
@@ -78,9 +82,13 @@ const ProductMysql = {
 
   async create(data) {
     const variants = data.variants || [];
+    const productId = await ProductSequenceMysql.reserveProductId(data.id || null);
+    const imageValue = data.image || PLACEHOLDER_IMAGE;
+    const shouldCreateImageRow = Boolean(data.image);
+    data = { ...data, id: productId };
     if (db.isMemoryMode()) {
       const mem = db.getMemory();
-      mem.products.push({ ...data, is_active: 1 });
+      mem.products.push({ ...data, image: imageValue, is_active: 1 });
       if (variants.length) await ProductVariantMysql.replaceForProduct(data.id, variants);
       else {
         await ProductVariantMysql.replaceForProduct(data.id, [
@@ -104,7 +112,9 @@ const ProductMysql = {
           },
         ]);
       }
-      await ProductImageMysql.create(data.id, data.image, data.name, true);
+      if (shouldCreateImageRow) {
+        await ProductImageMysql.create(data.id, imageValue, data.name, true);
+      }
       return this.getById(data.id);
     }
     await db.query(
@@ -122,7 +132,7 @@ const ProductMysql = {
         data.description,
         JSON.stringify(data.ingredients),
         JSON.stringify(data.benefits),
-        data.image,
+        imageValue,
         data.placeholder_color,
         data.placeholder_text,
         data.stock_qty || 100,
@@ -153,7 +163,9 @@ const ProductMysql = {
         },
       ]);
     }
-    await ProductImageMysql.create(data.id, data.image, data.name, true);
+    if (shouldCreateImageRow) {
+      await ProductImageMysql.create(data.id, imageValue, data.name, true);
+    }
     return this.getById(data.id);
   },
 
@@ -193,15 +205,28 @@ const ProductMysql = {
   },
 
   async delete(id) {
+    const imagePaths = await ProductImageMysql.deleteAllForProduct(id);
+    deleteUploadedImageFiles(imagePaths);
+
     if (db.isMemoryMode()) {
       const mem = db.getMemory();
       const idx = mem.products.findIndex((p) => p.id === id);
       if (idx === -1) return false;
-      mem.products[idx].is_active = 0;
+      mem.products.splice(idx, 1);
+      mem.productVariants = (mem.productVariants || []).filter((v) => v.product_id !== id);
+      mem.productImages = (mem.productImages || []).filter((i) => i.product_id !== id);
+      for (const [token, items] of mem.cartItems.entries()) {
+        mem.cartItems.set(
+          token,
+          items.filter((i) => i.product_id !== id)
+        );
+      }
       return true;
     }
-    await db.query('UPDATE products SET is_active = 0 WHERE id = ?', [id]);
-    return true;
+
+    await db.query('DELETE FROM cart_items WHERE product_id = ?', [id]);
+    const [result] = await db.query('DELETE FROM products WHERE id = ?', [id]);
+    return result.affectedRows > 0;
   },
 
   async decrementStock(productId, qty, connection) {

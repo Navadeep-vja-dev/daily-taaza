@@ -65,22 +65,27 @@ async function seed() {
     const { migrate } = require('./migrate');
     await migrate();
 
-    for (const [id, label] of Object.entries(CATEGORY_LABELS_MOCK)) {
-      await conn.query(
-        'INSERT IGNORE INTO categories (id, label, sort_order) VALUES (?, ?, ?)',
-        [id, label, 0]
-      );
+    const categoryIdBySlug = {};
+    for (const [slug, label] of Object.entries(CATEGORY_LABELS_MOCK)) {
+      const [result] = await conn.query('INSERT INTO categories (label) VALUES (?)', [label]);
+      categoryIdBySlug[slug] = result.insertId;
     }
 
+    const formatProductId = (n) => `P-${String(n).padStart(6, '0')}`;
+    let productSeq = 0;
+
     for (const p of PRODUCTS_MOCK) {
+      productSeq += 1;
+      const productId = formatProductId(productSeq);
+      const categoryId = categoryIdBySlug[p.category];
+
       await conn.query(
         `INSERT INTO products (id, category_id, name, slug, price, badge, description, ingredients, benefits,
           image, placeholder_color, placeholder_text, stock_qty, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-         ON DUPLICATE KEY UPDATE name = VALUES(name), price = VALUES(price)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         [
-          p.id,
-          p.category,
+          productId,
+          categoryId,
           p.name,
           p.id,
           p.price,
@@ -96,27 +101,30 @@ async function seed() {
       );
 
       await conn.query(
-        `INSERT IGNORE INTO product_variants (id, product_id, label, weight_grams, price, stock_qty, is_default, sort_order)
+        `INSERT INTO product_variants (id, product_id, label, weight_grams, price, stock_qty, is_default, sort_order)
          VALUES (?, ?, '500g', 500, ?, 100, 1, 0)`,
-        [`${p.id}-500g`, p.id, p.price]
+        [`${productId}-500g`, productId, p.price]
       );
       await conn.query(
-        `INSERT IGNORE INTO product_variants (id, product_id, label, weight_grams, price, stock_qty, is_default, sort_order)
+        `INSERT INTO product_variants (id, product_id, label, weight_grams, price, stock_qty, is_default, sort_order)
          VALUES (?, ?, '1 kg', 1000, ?, 100, 0, 1)`,
-        [`${p.id}-1kg`, p.id, Math.round(p.price * 1.8)]
+        [`${productId}-1kg`, productId, Math.round(p.price * 1.8)]
       );
 
-      const [existingImages] = await conn.query(
-        'SELECT id FROM product_images WHERE product_id = ? LIMIT 1',
-        [p.id]
+      await conn.query(
+        'INSERT INTO product_images (product_id, file_path, alt_text, sort_order, is_primary) VALUES (?, ?, ?, 0, 1)',
+        [productId, p.image, p.name]
       );
-      if (!existingImages.length) {
-        await conn.query(
-          'INSERT INTO product_images (product_id, file_path, alt_text, sort_order, is_primary) VALUES (?, ?, ?, 0, 1)',
-          [p.id, p.image, p.name]
-        );
-      }
     }
+
+    await conn.query(
+      'INSERT INTO id_sequences (name, next_val) VALUES (?, ?) ON DUPLICATE KEY UPDATE next_val = VALUES(next_val)',
+      ['product', productSeq + 1]
+    );
+    await conn.query(
+      'INSERT INTO id_sequences (name, next_val) VALUES (?, ?) ON DUPLICATE KEY UPDATE next_val = VALUES(next_val)',
+      ['order', 1]
+    );
 
     const hash = await bcrypt.hash('Admin@123', 12);
     await conn.query(

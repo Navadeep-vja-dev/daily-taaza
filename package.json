@@ -14,6 +14,7 @@
     "db:setup": "npm run db:up && npm run db:wait && npm run db:seed",
     "db:provision": "node scripts/db-provision.js",
     "db:seed": "node sql/seed.js",
+    "db:reset": "node sql/reset.js && node sql/seed.js",
     "test": "node tests/api.test.js",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",

@@ -93,9 +93,53 @@ async function probeServerWithoutAuth(options) {
   }
 }
 
-function buildFixes(error, config, openPorts) {
+const { execSync } = require('child_process');
+
+function isDockerMysqlRunning() {
+  try {
+    const out = execSync('docker ps --filter name=daily-taaza-mysql --format "{{.Names}}"', {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore'],
+    }).trim();
+    return out.includes('daily-taaza-mysql');
+  } catch {
+    return false;
+  }
+}
+
+async function probeCredentials(host, port, user, password, database) {
+  let conn;
+  try {
+    conn = await mysql.createConnection({
+      host,
+      port,
+      user,
+      password,
+      database,
+      connectTimeout: 5000,
+    });
+    await conn.query('SELECT 1');
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error };
+  } finally {
+    if (conn) await conn.end();
+  }
+}
+
+function buildFixes(error, config, openPorts, dockerHint) {
+  if (dockerHint?.worksOnDockerPort) {
+    return [
+      `Set DB_PORT=${dockerHint.dockerPort} in .env — your app user exists on Docker MySQL, not on local MySQL ${config.port}`,
+      'Ensure Docker is running: npm run docker:up',
+      'Or provision local MySQL: npm run db:init (creates daily_taaza on port 3306)',
+    ];
+  }
   if (error?.code === 'ER_ACCESS_DENIED_ERROR') {
-    const fixes = ['npm run db:init'];
+    const fixes = [
+      'User may not exist on this MySQL instance — run: npm run db:init',
+      'If using Docker MySQL, set DB_PORT=3307 and run: npm run docker:up',
+    ];
     if (config.port === 3306 && openPorts.includes(330)) {
       fixes.push('Ensure DB_PORT=3306 targets MySQL 9.7 (MySQL 8.0 uses port 330)');
     }
@@ -121,7 +165,14 @@ function buildFixes(error, config, openPorts) {
   return ['npm run db:check — full diagnosis'];
 }
 
-function buildCause(error, config, tcpReachable) {
+function buildCause(error, config, tcpReachable, dockerHint) {
+  if (dockerHint?.worksOnDockerPort) {
+    return (
+      `User "${config.user}" is not provisioned on local MySQL at ${config.host}:${config.port}, ` +
+      `but credentials work on Docker MySQL at ${config.host}:${dockerHint.dockerPort}. ` +
+      `Your .env DB_PORT points to the wrong MySQL instance.`
+    );
+  }
   if (!tcpReachable) {
     return `No MySQL server is listening on ${config.host}:${config.port}.`;
   }
@@ -183,10 +234,10 @@ function buildVerboseReport(context) {
 }
 
 function buildDiagnosisResult(context) {
-  const { config, tcpReachable, openPorts, error } = context;
-  const cause = buildCause(error, config, tcpReachable);
+  const { config, tcpReachable, openPorts, error, dockerHint } = context;
+  const cause = buildCause(error, config, tcpReachable, dockerHint);
   const summary = buildSummary(error, config);
-  const fixes = buildFixes(error, config, openPorts);
+  const fixes = buildFixes(error, config, openPorts, dockerHint);
 
   return {
     ok: false,
@@ -199,6 +250,7 @@ function buildDiagnosisResult(context) {
     openPorts,
     config,
     tcpReachable,
+    dockerHint: dockerHint || null,
   };
 }
 
@@ -231,6 +283,7 @@ async function diagnoseConnection(options = getPoolOptions()) {
   const config = describeDbConfig();
   const host = options.host || config.host;
   const port = options.port || config.port;
+  const dockerPort = parseInt(process.env.DB_DOCKER_PORT, 10) || 3307;
 
   const tcpReachable = await probeTcp(host, port);
   const openPorts = await scanLocalMysqlPorts('127.0.0.1');
@@ -240,16 +293,35 @@ async function diagnoseConnection(options = getPoolOptions()) {
     return buildDiagnosisResult({ config, tcpReachable, openPorts, error });
   }
 
-  const authWithPassword = await probeServerWithoutAuth({
+  const authWithPassword = await probeCredentials(
     host,
     port,
-    user: options.user || config.user,
-    password: options.password ?? env.db.password,
-    database: options.database,
-  });
+    options.user || config.user,
+    options.password ?? env.db.password,
+    options.database
+  );
 
   if (authWithPassword.ok) {
     return { ok: true, openPorts };
+  }
+
+  let dockerHint = null;
+  if (
+    authWithPassword.error?.code === 'ER_ACCESS_DENIED_ERROR' &&
+    port !== dockerPort &&
+    openPorts.includes(dockerPort) &&
+    isDockerMysqlRunning()
+  ) {
+    const dockerAuth = await probeCredentials(
+      host,
+      dockerPort,
+      options.user || config.user,
+      options.password ?? env.db.password,
+      options.database
+    );
+    if (dockerAuth.ok) {
+      dockerHint = { worksOnDockerPort: true, dockerPort };
+    }
   }
 
   return buildDiagnosisResult({
@@ -257,6 +329,7 @@ async function diagnoseConnection(options = getPoolOptions()) {
     tcpReachable,
     openPorts,
     error: authWithPassword.error,
+    dockerHint,
   });
 }
 
@@ -297,6 +370,8 @@ async function ensureDatabaseExists(overrides = {}) {
 const REQUIRED_TABLES = [
   'categories',
   'products',
+  'product_variants',
+  'product_images',
   'customers',
   'orders',
   'order_items',

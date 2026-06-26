@@ -21,23 +21,26 @@ const AdminCategoriesPage = {
       .map(
         (c) =>
           '<tr><td>' +
-          AdminLayout.escapeHtml(c.id) +
+          AdminLayout.escapeHtml(String(c.id)) +
           '</td><td>' +
           AdminLayout.escapeHtml(c.label) +
           '</td><td>' +
-          (c.sortOrder ?? 0) +
+          (c.isActive === false
+            ? '<span class="admin-badge admin-badge--inactive">Inactive</span>'
+            : '<span class="admin-badge admin-badge--active">Active</span>') +
           '</td><td class="admin-actions">' +
           '<button class="admin-btn admin-btn--secondary" data-edit="' +
           c.id +
           '">Edit</button> ' +
-          '<button class="admin-btn admin-btn--danger" data-del="' +
-          c.id +
-          '">Delete</button></td></tr>'
+          (c.isActive === false
+            ? '<button class="admin-btn" data-activate="' + c.id + '">Activate</button>'
+            : '<button class="admin-btn admin-btn--danger" data-del="' + c.id + '">Delete</button>') +
+          '</td></tr>'
       )
       .join('');
 
     document.getElementById('categories-table').innerHTML =
-      '<table class="admin-table"><thead><tr><th>ID</th><th>Label</th><th>Sort</th><th></th></tr></thead><tbody>' +
+      '<table class="admin-table"><thead><tr><th>ID</th><th>Label</th><th>Status</th><th></th></tr></thead><tbody>' +
       rows +
       '</tbody></table>';
 
@@ -47,25 +50,30 @@ const AdminCategoriesPage = {
     document.querySelectorAll('[data-del]').forEach((btn) =>
       btn.addEventListener('click', () => this.remove(btn.dataset.del))
     );
+    document.querySelectorAll('[data-activate]').forEach((btn) =>
+      btn.addEventListener('click', () => this.activate(btn.dataset.activate))
+    );
+  },
+
+  async activate(id) {
+    await AdminApi.put('/admin/categories/' + id, { is_active: true });
+    await this.load();
   },
 
   showForm(id) {
     this.editingId = id || null;
-    const c = id ? this.categories.find((x) => x.id === id) : null;
+    const c = id ? this.categories.find((x) => String(x.id) === String(id)) : null;
     document.getElementById('form-panel').hidden = false;
     document.getElementById('form-panel').innerHTML =
       '<h2>' +
       (id ? 'Edit category' : 'New category') +
       '</h2>' +
       '<form class="admin-form" id="category-form">' +
-      '<label>ID<input name="id" required ' +
-      (id ? 'readonly value="' + AdminLayout.escapeHtml(id) + '"' : '') +
-      '></label>' +
+      '<label>ID<input name="id" readonly value="' +
+      AdminLayout.escapeHtml(id ? String(id) : 'Auto-assigned') +
+      '"></label>' +
       '<label>Label<input name="label" required value="' +
       AdminLayout.escapeHtml(c?.label || '') +
-      '"></label>' +
-      '<label>Sort order<input name="sort_order" type="number" value="' +
-      (c?.sortOrder ?? 0) +
       '"></label>' +
       '<div class="admin-actions"><button type="submit" class="admin-btn">Save</button>' +
       '<button type="button" class="admin-btn admin-btn--secondary" id="btn-cancel">Cancel</button></div>' +
@@ -81,9 +89,7 @@ const AdminCategoriesPage = {
     e.preventDefault();
     const f = e.target;
     const payload = {
-      id: f.id.value.trim(),
       label: f.label.value.trim(),
-      sort_order: parseInt(f.sort_order.value, 10) || 0,
       is_active: true,
     };
     try {

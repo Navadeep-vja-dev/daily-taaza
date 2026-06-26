@@ -27,7 +27,7 @@ const AdminLayout = {
     return (
       '<div class="admin-app">' +
       '<aside class="admin-sidebar">' +
-      '<div class="admin-brand"><a href="index.html">Daily Taaza</a><span>Admin</span></div>' +
+      '<div class="admin-brand"><a href="index.html"><img src="/assets/images/dailytaaza-logo.png" alt="Daily Taaza" class="admin-logo-img"><span>Daily Taaza</span></a><span class="admin-brand__sub">Admin</span></div>' +
       '<nav class="admin-nav">' +
       nav +
       '</nav>' +

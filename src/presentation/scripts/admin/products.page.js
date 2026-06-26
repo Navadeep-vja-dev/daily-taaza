@@ -2,6 +2,9 @@ const AdminProductsPage = {
   products: [],
   categories: [],
   editingId: null,
+  existingImages: [],
+  pendingFiles: [],
+  pendingPreviewUrls: [],
 
   async init() {
     if (!AdminAuth.requireAuth()) return;
@@ -25,6 +28,11 @@ const AdminProductsPage = {
     this.renderTable();
   },
 
+  categoryLabel(categoryId) {
+    const c = this.categories.find((x) => String(x.id) === String(categoryId));
+    return c ? c.label : String(categoryId ?? '');
+  },
+
   renderTable() {
     const rows = this.products
       .map(
@@ -34,7 +42,7 @@ const AdminProductsPage = {
           '</td><td>₹' +
           p.price +
           '</td><td>' +
-          AdminLayout.escapeHtml(p.category) +
+          AdminLayout.escapeHtml(this.categoryLabel(p.category)) +
           '</td><td>' +
           (p.stockQty ?? '-') +
           '</td><td class="admin-actions">' +
@@ -60,19 +68,203 @@ const AdminProductsPage = {
     );
   },
 
+  clearPendingFiles() {
+    this.pendingPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+    this.pendingFiles = [];
+    this.pendingPreviewUrls = [];
+  },
+
+  imageSrc(path) {
+    if (!path) return '';
+    return path.startsWith('/') ? path : '/' + path;
+  },
+
+  renderImageGallery() {
+    const existing = this.existingImages
+      .map(
+        (img) =>
+          '<div class="admin-image-card' +
+          (img.isPrimary ? ' admin-image-card--primary' : '') +
+          '" data-image-id="' +
+          img.id +
+          '">' +
+          '<img src="' +
+          AdminLayout.escapeHtml(this.imageSrc(img.path)) +
+          '" alt="Product image">' +
+          '<div class="admin-image-card__actions">' +
+          (img.isPrimary
+            ? '<span class="admin-image-card__badge">Primary</span>'
+            : '<button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" data-set-primary="' +
+              img.id +
+              '">Set primary</button>') +
+          '<button type="button" class="admin-btn admin-btn--danger admin-btn--sm" data-remove-existing="' +
+          img.id +
+          '">Remove</button>' +
+          '</div></div>'
+      )
+      .join('');
+
+    const pending = this.pendingFiles
+      .map(
+        (file, index) =>
+          '<div class="admin-image-card admin-image-card--pending" data-pending-index="' +
+          index +
+          '">' +
+          '<img src="' +
+          AdminLayout.escapeHtml(this.pendingPreviewUrls[index]) +
+          '" alt="Selected image">' +
+          '<div class="admin-image-card__actions">' +
+          '<span class="admin-image-card__badge">New</span>' +
+          '<button type="button" class="admin-btn admin-btn--danger admin-btn--sm" data-remove-pending="' +
+          index +
+          '">Remove</button>' +
+          '</div></div>'
+      )
+      .join('');
+
+    const total = this.existingImages.length + this.pendingFiles.length;
+    const empty =
+      total === 0
+        ? '<p class="admin-image-hint">Upload at least one JPG, JPEG, PNG, or WEBP image (max 5 MB each, up to 10 total).</p>'
+        : '';
+
+    return (
+      '<div class="admin-image-section">' +
+      empty +
+      '<div class="admin-image-gallery">' +
+      existing +
+      pending +
+      '</div>' +
+      '<p class="admin-image-hint">' +
+      total +
+      ' / ' +
+      AdminApi.maxProductImages +
+      ' images</p></div>'
+    );
+  },
+
+  bindImageGalleryEvents() {
+    document.querySelectorAll('[data-remove-pending]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const index = parseInt(btn.dataset.removePending, 10);
+        URL.revokeObjectURL(this.pendingPreviewUrls[index]);
+        this.pendingFiles.splice(index, 1);
+        this.pendingPreviewUrls.splice(index, 1);
+        this.refreshImageGallery();
+      });
+    });
+
+    document.querySelectorAll('[data-remove-existing]').forEach((btn) => {
+      btn.addEventListener('click', () => this.removeExistingImage(btn.dataset.removeExisting));
+    });
+
+    document.querySelectorAll('[data-set-primary]').forEach((btn) => {
+      btn.addEventListener('click', () => this.setPrimaryImage(btn.dataset.setPrimary));
+    });
+  },
+
+  refreshImageGallery() {
+    const gallery = document.getElementById('image-gallery');
+    if (!gallery) return;
+    gallery.innerHTML = this.renderImageGallery();
+    this.bindImageGalleryEvents();
+  },
+
+  validateSelectedFiles(files) {
+    const total = this.existingImages.length + this.pendingFiles.length + files.length;
+    if (total > AdminApi.maxProductImages) {
+      throw new Error('Maximum ' + AdminApi.maxProductImages + ' images per product');
+    }
+
+    const maxBytes = AdminApi.maxImageSizeMb * 1024 * 1024;
+    for (const file of files) {
+      if (!AdminApi.allowedImageTypes.includes(file.type)) {
+        throw new Error('Only JPG, JPEG, PNG, and WEBP images are allowed');
+      }
+      if (file.size > maxBytes) {
+        throw new Error('Each image must be at most ' + AdminApi.maxImageSizeMb + ' MB');
+      }
+    }
+  },
+
+  onFilesSelected(fileList) {
+    const errEl = document.getElementById('form-error');
+    errEl.textContent = '';
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+
+    try {
+      this.validateSelectedFiles(files);
+      files.forEach((file) => {
+        this.pendingFiles.push(file);
+        this.pendingPreviewUrls.push(URL.createObjectURL(file));
+      });
+      this.refreshImageGallery();
+      const input = document.getElementById('product-images-input');
+      if (input) input.value = '';
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  },
+
+  async removeExistingImage(imageId) {
+    if (!this.editingId) return;
+    const errEl = document.getElementById('form-error');
+    errEl.textContent = '';
+
+    try {
+      const result = await AdminApi.deleteProductImage(this.editingId, imageId);
+      this.existingImages = result.images || [];
+      this.refreshImageGallery();
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  },
+
+  async setPrimaryImage(imageId) {
+    if (!this.editingId) return;
+    const errEl = document.getElementById('form-error');
+    errEl.textContent = '';
+
+    try {
+      await AdminApi.setPrimaryImage(this.editingId, imageId);
+      this.existingImages = this.existingImages.map((img) => ({
+        ...img,
+        isPrimary: img.id === Number(imageId),
+      }));
+      this.refreshImageGallery();
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  },
+
   async showForm(id) {
     this.editingId = id || null;
+    this.clearPendingFiles();
+    this.existingImages = [];
+
     let p = null;
+    let nextId = '';
     if (id) {
       p = await AdminApi.get('/products/' + id);
+      this.existingImages = p.images || [];
+    } else {
+      try {
+        const reserved = await AdminApi.get('/admin/products/next-id');
+        nextId = reserved.id;
+      } catch {
+        nextId = '';
+      }
     }
+
     const catOptions = this.categories
+      .filter((c) => c.isActive !== false || (p && String(p.category) === String(c.id)))
       .map(
         (c) =>
           '<option value="' +
           c.id +
           '"' +
-          (p && p.category === c.id ? ' selected' : '') +
+          (p && String(p.category) === String(c.id) ? ' selected' : '') +
           '>' +
           AdminLayout.escapeHtml(c.label) +
           '</option>'
@@ -85,9 +277,10 @@ const AdminProductsPage = {
       (id ? 'Edit product' : 'New product') +
       '</h2>' +
       '<form class="admin-form" id="product-form">' +
-      '<label>ID<input name="id" required ' +
-      (id ? 'readonly value="' + AdminLayout.escapeHtml(id) + '"' : '') +
-      '></label>' +
+      '<label>Product ID<input name="id" required readonly value="' +
+      AdminLayout.escapeHtml(id || nextId) +
+      '"></label>' +
+      (id ? '' : '<p class="admin-image-hint">Product ID is assigned automatically and never reused.</p>') +
       '<label>Name<input name="name" required value="' +
       AdminLayout.escapeHtml(p?.name) +
       '"></label>' +
@@ -112,12 +305,18 @@ const AdminProductsPage = {
       '<label>Benefits (comma-separated)<input name="benefits" value="' +
       AdminLayout.escapeHtml((p?.benefits || []).join(', ')) +
       '"></label>' +
-      '<label>Image path<input name="image" required value="' +
-      AdminLayout.escapeHtml(p?.image || '/assets/images/idli-dosa-batter.jpg') +
-      '"></label>' +
-      '<label>Upload image<input type="file" name="imageFile" accept="image/*"></label>' +
+      '<div class="admin-form__images">' +
+      '<span class="admin-form__images-label">Product images</span>' +
+      '<div id="image-gallery">' +
+      this.renderImageGallery() +
+      '</div>' +
+      '<label class="admin-file-input">' +
+      '<span>Upload images</span>' +
+      '<input type="file" id="product-images-input" name="images" multiple accept="image/jpeg,image/jpg,image/png,image/webp">' +
+      '</label>' +
+      '</div>' +
       '<label>Placeholder color<input name="placeholder_color" required value="' +
-      AdminLayout.escapeHtml(p?.placeholderColor || '#E8F5E9') +
+      AdminLayout.escapeHtml(p?.placeholderColor || '#E6F4F1') +
       '"></label>' +
       '<label>Stock<input name="stock_qty" type="number" value="' +
       (p?.stockQty ?? 100) +
@@ -131,6 +330,7 @@ const AdminProductsPage = {
       '<p class="admin-error" id="form-error"></p></form>';
 
     document.getElementById('btn-cancel').onclick = () => {
+      this.clearPendingFiles();
       document.getElementById('form-panel').hidden = true;
     };
     document.getElementById('btn-add-variant')?.addEventListener('click', () => {
@@ -140,6 +340,11 @@ const AdminProductsPage = {
       editor.insertAdjacentHTML('beforeend', this.variantRowHtml(productId + '-v' + idx, '', 0, 100, false));
     });
 
+    document.getElementById('product-images-input').addEventListener('change', (e) => {
+      this.onFilesSelected(e.target.files);
+    });
+
+    this.bindImageGalleryEvents();
     document.getElementById('product-form').onsubmit = (e) => this.save(e);
   },
 
@@ -182,11 +387,10 @@ const AdminProductsPage = {
     const errEl = document.getElementById('form-error');
     errEl.textContent = '';
 
-    let image = f.image.value.trim();
-    const file = f.imageFile.files[0];
-    if (file) {
-      const uploaded = await AdminApi.uploadImage(file, this.editingId || undefined);
-      image = uploaded.path.replace(/^\//, '');
+    const totalImages = this.existingImages.length + this.pendingFiles.length;
+    if (totalImages === 0) {
+      errEl.textContent = 'Please upload at least one product image';
+      return;
     }
 
     const payload = {
@@ -199,7 +403,6 @@ const AdminProductsPage = {
       description: f.description.value.trim(),
       ingredients: f.ingredients.value.split(',').map((s) => s.trim()).filter(Boolean),
       benefits: f.benefits.value.split(',').map((s) => s.trim()).filter(Boolean),
-      image,
       placeholder_color: f.placeholder_color.value.trim(),
       placeholder_text: null,
       stock_qty: parseInt(f.stock_qty.value, 10) || 0,
@@ -208,8 +411,20 @@ const AdminProductsPage = {
     if (variants) payload.variants = variants;
 
     try {
-      if (this.editingId) await AdminApi.put('/admin/products/' + this.editingId, payload);
-      else await AdminApi.post('/admin/products', payload);
+      let productId = this.editingId;
+      if (this.editingId) {
+        await AdminApi.put('/admin/products/' + this.editingId, payload);
+      } else {
+        const created = await AdminApi.post('/admin/products', payload);
+        productId = created.id;
+      }
+
+      if (this.pendingFiles.length) {
+        const uploadResult = await AdminApi.uploadImages(productId, this.pendingFiles);
+        this.existingImages = uploadResult.images || uploadResult.uploaded || [];
+      }
+
+      this.clearPendingFiles();
       document.getElementById('form-panel').hidden = true;
       await this.load();
     } catch (err) {

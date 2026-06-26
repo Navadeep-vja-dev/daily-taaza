@@ -161,6 +161,19 @@
     padding-top: 32px;
   }
 
+  .hero-shape {
+    display: none;
+  }
+
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
   .page-hero {
     padding-top: 24px;
     padding-bottom: 32px;
@@ -371,8 +384,16 @@
     padding: 12px 20px;
   }
 
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .hero-actions .btn {
+    width: 100%;
+  }
+
   .testimonial-card {
-    padding: 24px;
+    padding: 28px 24px;
   }
 
   .newsletter {

@@ -3,6 +3,9 @@
  */
 const AdminApi = {
   baseUrl: '/api',
+  maxProductImages: 10,
+  maxImageSizeMb: 5,
+  allowedImageTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
 
   getToken() {
     return sessionStorage.getItem('adminAccessToken');
@@ -67,6 +70,21 @@ const AdminApi = {
     return this.request('DELETE', path);
   },
 
+  uploadImages(productId, files) {
+    const fd = new FormData();
+    files.forEach((file) => fd.append('images', file));
+    return this.request('POST', `/admin/products/${productId}/images`, fd, true);
+  },
+
+  deleteProductImage(productId, imageId) {
+    return this.request('DELETE', `/admin/products/${productId}/images/${imageId}`);
+  },
+
+  setPrimaryImage(productId, imageId) {
+    return this.request('PUT', `/admin/products/${productId}/images/${imageId}/primary`);
+  },
+
+  /** @deprecated Use uploadImages */
   uploadImage(file, productId) {
     const fd = new FormData();
     fd.append('image', file);

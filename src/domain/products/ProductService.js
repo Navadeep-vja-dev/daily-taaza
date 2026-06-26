@@ -14,7 +14,7 @@ const ProductService = {
     let result = await this.getAll();
 
     if (category && category !== 'all') {
-      result = result.filter((p) => p.category === category);
+      result = result.filter((p) => String(p.category) === String(category));
     }
 
     if (query.trim()) {

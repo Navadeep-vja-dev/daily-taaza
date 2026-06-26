@@ -226,18 +226,30 @@ body.is-loading {
 }
 
 .btn-primary,
+.btn-secondary,
 .btn-commerce {
-  transition: background-color var(--transition), transform 0.2s ease, box-shadow 0.25s ease;
+  transition: background-color var(--transition), color var(--transition), transform var(--transition), box-shadow var(--transition);
 }
 
-.btn-primary:hover,
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(3, 107, 97, 0.28);
+}
+
+.btn-secondary:hover,
 .btn-commerce:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(45, 90, 39, 0.25);
+  box-shadow: 0 8px 22px rgba(216, 133, 0, 0.32);
 }
 
-.btn-commerce:hover {
-  box-shadow: 0 6px 20px rgba(212, 118, 81, 0.35);
+/* Reusable hover-lift for cards/elements */
+.hover-lift {
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.hover-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-card-hover);
 }
 
 /* ---- Cards enhanced ---- */
@@ -419,7 +431,7 @@ body.is-loading {
 /* ---- Newsletter input focus glow ---- */
 
 .newsletter-form .input:focus {
-  box-shadow: 0 0 0 3px rgba(188, 240, 174, 0.25);
+  box-shadow: 0 0 0 3px rgba(252, 182, 56, 0.35);
 }
 
 .breadcrumbs + .page-hero,

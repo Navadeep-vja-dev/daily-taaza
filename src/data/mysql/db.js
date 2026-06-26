@@ -63,15 +63,16 @@ function seedVariantsForProduct(p) {
 function loadMockData() {
   const { PRODUCTS_MOCK } = require('../mock/products.mock.js');
   const { CATEGORY_LABELS_MOCK } = require('../mock/categories.mock.js');
-  memory.categories = Object.entries(CATEGORY_LABELS_MOCK).map(([id, label], i) => ({
-    id,
-    label,
-    sort_order: i,
-    is_active: 1,
-  }));
-  memory.products = PRODUCTS_MOCK.map((p) => ({
-    id: p.id,
-    category_id: p.category,
+  const categoryIdBySlug = {};
+  memory.categories = Object.entries(CATEGORY_LABELS_MOCK).map(([slug, label], i) => {
+    const id = i + 1;
+    categoryIdBySlug[slug] = id;
+    return { id, label, is_active: 1 };
+  });
+  const formatProductId = (n) => `P-${String(n).padStart(6, '0')}`;
+  memory.products = PRODUCTS_MOCK.map((p, i) => ({
+    id: formatProductId(i + 1),
+    category_id: categoryIdBySlug[p.category],
     name: p.name,
     slug: p.id,
     price: p.price,
@@ -85,6 +86,7 @@ function loadMockData() {
     stock_qty: 100,
     is_active: 1,
   }));
+  memory.sequences = { product: PRODUCTS_MOCK.length + 1, order: 1 };
   memory.productVariants = memory.products.flatMap((p) => seedVariantsForProduct(p));
   memory.productImages = memory.products.map((p) => ({
     id: memory.nextId++,

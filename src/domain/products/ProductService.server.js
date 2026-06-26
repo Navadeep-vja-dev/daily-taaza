@@ -1,4 +1,5 @@
 const ProductMysql = require('../../data/mysql/product.mysql');
+const ProductSequenceMysql = require('../../data/mysql/productSequence.mysql');
 const CategoryMysql = require('../../data/mysql/category.mysql');
 
 const ProductServiceServer = {
@@ -25,6 +26,14 @@ const ProductServiceServer = {
     return ProductMysql.create(data);
   },
 
+  async getNextProductId() {
+    return ProductSequenceMysql.getNextProductId();
+  },
+
+  async peekNextProductId() {
+    return ProductSequenceMysql.peekNextProductId();
+  },
+
   async update(id, data) {
     return ProductMysql.update(id, data);
   },
@@ -35,8 +44,8 @@ const ProductServiceServer = {
 };
 
 const CategoryServiceServer = {
-  async getAll() {
-    return CategoryMysql.getAll();
+  async getAll(options = {}) {
+    return CategoryMysql.getAll(!options.includeInactive);
   },
 
   async getById(id) {

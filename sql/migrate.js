@@ -32,6 +32,20 @@ async function indexExists(conn, table, indexName) {
   return rows.length > 0;
 }
 
+async function foreignKeyExists(conn, table, column, referencedTable) {
+  const [rows] = await conn.query(
+    `SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+       AND REFERENCED_TABLE_NAME = ? LIMIT 1`,
+    [env.db.database, table, column, referencedTable]
+  );
+  return rows[0]?.CONSTRAINT_NAME || null;
+}
+
+async function dropForeignKey(conn, table, constraintName) {
+  await conn.query(`ALTER TABLE \`${table}\` DROP FOREIGN KEY \`${constraintName}\``);
+}
+
 async function migrate() {
   if (useMemoryStorage()) {
     console.log('Migration skipped (DB_USE_MEMORY=true)');
@@ -159,6 +173,41 @@ async function migrate() {
     }
     if (orphanImages.length) {
       console.log(`Backfilled primary images for ${orphanImages.length} products`);
+    }
+
+    const orderItemsProductFk = await foreignKeyExists(conn, 'order_items', 'product_id', 'products');
+    if (orderItemsProductFk) {
+      await dropForeignKey(conn, 'order_items', orderItemsProductFk);
+      console.log('Dropped order_items.product_id foreign key (orders keep product snapshots)');
+    }
+
+    if (!(await tableExists(conn, 'id_sequences'))) {
+      await conn.query(`
+        CREATE TABLE id_sequences (
+          name VARCHAR(50) PRIMARY KEY,
+          next_val BIGINT NOT NULL
+        )
+      `);
+      console.log('Created id_sequences table');
+    }
+
+    const [seqRows] = await conn.query('SELECT next_val FROM id_sequences WHERE name = ? LIMIT 1', [
+      'product',
+    ]);
+    if (!seqRows.length) {
+      const [productIds] = await conn.query(
+        `SELECT id FROM products WHERE id REGEXP '^P-[0-9]+$'`
+      );
+      let maxNum = 0;
+      for (const row of productIds) {
+        const n = parseInt(String(row.id).slice(2), 10);
+        if (Number.isFinite(n) && n > maxNum) maxNum = n;
+      }
+      await conn.query('INSERT INTO id_sequences (name, next_val) VALUES (?, ?)', [
+        'product',
+        maxNum + 1,
+      ]);
+      console.log(`Initialized product ID sequence at ${maxNum + 1}`);
     }
 
     console.log('Migration complete.');

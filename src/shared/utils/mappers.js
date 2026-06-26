@@ -82,7 +82,6 @@ function mapCategoryRow(row) {
   return {
     id: row.id,
     label: row.label,
-    sortOrder: row.sort_order,
     isActive: Boolean(row.is_active),
   };
 }

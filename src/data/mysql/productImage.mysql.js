@@ -15,6 +15,42 @@ function mapImageRow(row) {
 const ProductImageMysql = {
   mapImageRow,
 
+  async getById(productId, imageId) {
+    if (db.isMemoryMode()) {
+      const row = (db.getMemory().productImages || []).find(
+        (i) => i.id === Number(imageId) && i.product_id === productId
+      );
+      return mapImageRow(row);
+    }
+    const [rows] = await db.query(
+      'SELECT * FROM product_images WHERE id = ? AND product_id = ? LIMIT 1',
+      [imageId, productId]
+    );
+    return mapImageRow(rows[0]);
+  },
+
+  async countByProductId(productId) {
+    if (db.isMemoryMode()) {
+      return (db.getMemory().productImages || []).filter((i) => i.product_id === productId).length;
+    }
+    const [rows] = await db.query(
+      'SELECT COUNT(*) AS c FROM product_images WHERE product_id = ?',
+      [productId]
+    );
+    return Number(rows[0].c);
+  },
+
+  async deleteAllForProduct(productId) {
+    const images = await this.getByProductId(productId);
+    if (db.isMemoryMode()) {
+      const mem = db.getMemory();
+      mem.productImages = (mem.productImages || []).filter((i) => i.product_id !== productId);
+      return images.map((i) => i.path);
+    }
+    await db.query('DELETE FROM product_images WHERE product_id = ?', [productId]);
+    return images.map((i) => i.path);
+  },
+
   async getByProductId(productId) {
     if (db.isMemoryMode()) {
       return (db.getMemory().productImages || [])

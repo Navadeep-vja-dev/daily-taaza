@@ -68,18 +68,29 @@ const CustomerServiceServer = {
   async reorder(customerId, orderNumber, cartToken) {
     const order = await this.getOrder(customerId, orderNumber);
     let token = cartToken;
+    const skipped = [];
+
     for (const item of order.items) {
-      const result = await CartMysql.addItem(
-        token,
-        item.productId || item.id,
-        item.quantity,
-        item.variantId,
-        customerId
-      );
-      token = result.token;
+      try {
+        const result = await CartMysql.addItem(
+          token,
+          item.productId || item.id,
+          item.quantity,
+          item.variantId,
+          customerId
+        );
+        token = result.token;
+      } catch (err) {
+        skipped.push({
+          name: item.name,
+          variantLabel: item.variantLabel || null,
+          reason: err.message,
+        });
+      }
     }
+
     const items = await CartMysql.getItems(token);
-    return { items, cartToken: token };
+    return { items, cartToken: token, skipped };
   },
 };
 

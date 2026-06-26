@@ -9,7 +9,7 @@ const env = {
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT, 10) || 3306,
-    user: process.env.DB_USER || 'root',
+    user: process.env.DB_USER || 'daily_taaza',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'daily_taaza',
   },
@@ -32,7 +32,8 @@ const env = {
   },
   upload: {
     dir: process.env.UPLOAD_DIR || 'uploads',
-    maxSizeMb: parseInt(process.env.UPLOAD_MAX_MB, 10) || 2,
+    maxSizeMb: parseInt(process.env.UPLOAD_MAX_MB, 10) || 5,
+    maxImagesPerProduct: parseInt(process.env.PRODUCT_MAX_IMAGES, 10) || 10,
   },
   corsOrigin: process.env.CORS_ORIGIN || '*',
 };

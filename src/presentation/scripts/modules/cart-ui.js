@@ -37,7 +37,7 @@ const CartUI = {
       .map((item) => {
         const key = this.itemKey(item);
         const letter = item.name.charAt(0).toUpperCase();
-        const textColor = item.placeholderText || '#2D5A27';
+        const textColor = item.placeholderText || '#036B61';
         const lineTotal = item.price * item.quantity;
         const imgSrc = Paths.asset(item.image);
         const variantLabel = item.variantLabel ? ' <span class="cart-item__variant">(' + item.variantLabel + ')</span>' : '';

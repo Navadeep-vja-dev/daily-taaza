@@ -7,6 +7,11 @@ exports.list = async (req, res) => {
   return success(res, categories);
 };
 
+exports.adminList = async (req, res) => {
+  const categories = await CategoryServiceServer.getAll({ includeInactive: true });
+  return success(res, categories);
+};
+
 exports.getOne = async (req, res) => {
   const category = await CategoryServiceServer.getById(req.params.id);
   if (!category) throw AppError.notFound('Category not found');

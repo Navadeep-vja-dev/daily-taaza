@@ -14,6 +14,7 @@
     '/src/data/storage/cart.localStorage.js',
     '/src/data/providers/MockProductProvider.js',
     '/src/data/providers/ApiProductProvider.js',
+    '/src/data/providers/ApiCategoryProvider.js',
     '/src/data/providers/MysqlProductProvider.js',
     '/src/data/providers/ApiCartProvider.js',
     '/src/data/providers/CartStorageProvider.js',

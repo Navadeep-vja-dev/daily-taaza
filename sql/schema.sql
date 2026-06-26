@@ -3,18 +3,17 @@ CREATE DATABASE IF NOT EXISTS daily_taaza CHARACTER SET utf8mb4 COLLATE utf8mb4_
 USE daily_taaza;
 
 CREATE TABLE IF NOT EXISTS categories (
-  id VARCHAR(50) PRIMARY KEY,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   label VARCHAR(100) NOT NULL,
-  sort_order INT NOT NULL DEFAULT 0,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_categories_active_sort (is_active, sort_order)
+  INDEX idx_categories_active (is_active)
 );
 
 CREATE TABLE IF NOT EXISTS products (
   id VARCHAR(100) PRIMARY KEY,
-  category_id VARCHAR(50) NOT NULL,
+  category_id INT NOT NULL,
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(120) NOT NULL UNIQUE,
   price DECIMAL(10, 2) NOT NULL,
@@ -149,7 +148,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   quantity INT NOT NULL,
   line_total DECIMAL(10, 2) NOT NULL,
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-  FOREIGN KEY (product_id) REFERENCES products(id)
+  INDEX idx_order_items_product_ref (product_id)
 );
 
 CREATE TABLE IF NOT EXISTS order_status_history (
@@ -244,6 +243,11 @@ CREATE TABLE IF NOT EXISTS whatsapp_logs (
   retry_count INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS id_sequences (
+  name VARCHAR(50) PRIMARY KEY,
+  next_val BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS settings (

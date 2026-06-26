@@ -1,6 +1,6 @@
 const SettingsMysql = require('../../data/mysql/settings.mysql');
 const ProductImageMysql = require('../../data/mysql/productImage.mysql');
-const path = require('path');
+const { webPathFromFilename } = require('../../shared/utils/productImageFiles');
 const { success } = require('../../shared/utils/response');
 const AppError = require('../../shared/errors/AppError');
 
@@ -11,8 +11,7 @@ exports.getPublicSettings = async (req, res) => {
 
 exports.uploadProductImage = async (req, res) => {
   if (!req.file) throw AppError.badRequest('No file uploaded');
-  const relativePath = path.join('uploads/products', req.file.filename).replace(/\\/g, '/');
-  const webPath = `/${relativePath}`;
+  const webPath = webPathFromFilename(req.file.filename);
   if (req.body.productId) {
     await ProductImageMysql.create(req.body.productId, webPath, null, !req.body.append);
     await ProductImageMysql.syncProductPrimaryImage(req.body.productId);
